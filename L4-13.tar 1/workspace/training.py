@@ -31,7 +31,7 @@ def sgd(params, grad, lr, bs):
 
 
 
-def training_loop(train_dataset, model, lr):
+def training_loop(lr):
     """
     training loop
     args:
@@ -49,7 +49,7 @@ def training_loop(train_dataset, model, lr):
         with tf.GradientTape() as tape:
             # IMPLEMENT THIS FUNCTION    
             # normalize the input 
-            X = X/255
+            X = X/255.0
             # logistic regression
             logits = logistic_model(X)
             # prepare for loss calculation
@@ -62,7 +62,7 @@ def training_loop(train_dataset, model, lr):
             # apply and update SGD
             sgd([W,b],grads,lr,X.shape[0])
             # calculate accuracy 
-            acc = accuracy(logits,one_hot)
+            acc = accuracy(logits,Y)
             accuracies.append(acc)
 
     mean_acc = tf.math.reduce_mean(tf.concat(accuracies, axis=0))
@@ -71,11 +71,11 @@ def training_loop(train_dataset, model, lr):
 
 def logistic_model(X):
     flatten_X = tf.reshape(X,(-1,W.shape[0]))
-    print(W.shape)
-    logits = tf.math.add(tf.matmul(flatten_X,W),b)
+    # print(W.shape)
+    logits = tf.matmul(flatten_X,W)+b
     return softmax(logits)
 
-def validation_loop(val_dataset, model):
+def validation_loop():
     """
     training loop
     args:
@@ -88,15 +88,13 @@ def validation_loop(val_dataset, model):
     """
     # IMPLEMENT THIS FUNCTION
     accuracies = []
-    for X, Y in train_dataset:
+    for X, Y in val_dataset:
         # normalize the input 
-        X = X/255
+        X = X/255.0
         # logistic regression
         logits = logistic_model(X)
-        # prepare for loss calculation
-        one_hot = tf.one_hot(Y,W.shape[1])
         # calculate accuracy 
-        acc = accuracy(logits,one_hot)
+        acc = accuracy(logits,Y)
         accuracies.append(acc)
     mean_acc = tf.math.reduce_mean(tf.concat(accuracies, axis=0))
     return mean_acc
@@ -105,12 +103,12 @@ def validation_loop(val_dataset, model):
 if __name__  == '__main__':
     logger = get_module_logger(__name__)
     parser = argparse.ArgumentParser(description='Download and process tf files')
-    parser.add_argument('--imdir', default='GTSRB/Final_Training/Images/', type=str,
+    parser.add_argument('--imdir', required=True,type=str,
                         help='data directory')
     parser.add_argument('--epochs', default=10, type=int,
                         help='Number of epochs')
                         
-    args = parser.parse_args()    
+    args = parser.parse_args(['--imdir','GTSRB/Final_Training/Images/'])
     # args.imdir ='GTSRB/Final_Training/Images/'
     logger.info(f'Training for {args.epochs} epochs using {args.imdir} data')
     # get the datasets
@@ -122,12 +120,12 @@ if __name__  == '__main__':
     W = tf.Variable(tf.random.normal(shape=(num_inputs, num_outputs),
                                     mean=0, stddev=0.01))
     b = tf.Variable(tf.zeros(num_outputs))
-    lr = 0.01
+    lr = 0.1
 
     # training! 
     for epoch in range(args.epochs):
         logger.info(f'Epoch {epoch}')
-        loss, acc = training_loop(train_dataset,logistic_model,lr)
-        logger.info(f'Mean training loss: {loss}, mean training accuracy {acc}')
-        acc = validation_loop(val_dataset,logistic_model)
-        logger.info(f'Mean validation accuracy {acc}')
+        loss, acc = training_loop(lr)
+        logger.info(f'Mean training loss: {loss:1f}, mean training accuracy {acc:1f}')
+        val_acc = validation_loop()
+        logger.info(f'Mean validation accuracy {val_acc:1f}')

@@ -89,8 +89,7 @@ if __name__  == '__main__':
                         help='data directory')
     parser.add_argument('--epochs', default=10, type=int,
                         help='Number of epochs')
-    args = parser.parse_args()    
-
+    args = parser.parse_args(['--imdir','GTSRB/Final_Training/Images/'])
     logger.info(f'Training for {args.epochs} epochs using {args.imdir} data')
     # get the datasets
     train_dataset, val_dataset = get_datasets(args.imdir)
